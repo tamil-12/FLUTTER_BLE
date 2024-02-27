@@ -1,6 +1,12 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
-import 'dart:convert';
+
+const SERVICE_UUID = "fc96f65e-318a-4001-84bd-77e9d12af44b";
+const CHARACTERISTIC_UUID_RX = "04d3552e-b9b3-4be6-a8b4-aa43c4507c4d";
+  const CHARACTERISTIC_UUID_TX = "94b43599-5ea2-41e7-9d99-6ff9b904ae3a";
 
 void main() {
   runApp(MyApp());
@@ -29,8 +35,6 @@ class _MyHomePageState extends State<MyHomePage> {
   bool isDeviceConnected = false;
   String deviceData = '';
 
-  TextEditingController _textController = TextEditingController();
-
   @override
   void initState() {
     super.initState();
@@ -43,9 +47,7 @@ class _MyHomePageState extends State<MyHomePage> {
     });
 
     try {
-      flutterReactiveBle
-          .scanForDevices(withServices: [])
-          .listen((device) {
+      flutterReactiveBle.scanForDevices(withServices: []).listen((device) {
         setState(() {
           if (!discoveredDevices.any((element) => element.id == device.id)) {
             discoveredDevices.add(device);
@@ -85,8 +87,8 @@ class _MyHomePageState extends State<MyHomePage> {
       // Subscribe to characteristic for receiving data
       flutterReactiveBle.subscribeToCharacteristic(
         QualifiedCharacteristic(
-          serviceId: Uuid.parse("4fafc201-1fb5-459e-8fcc-c5c9c331914b"),
-          characteristicId: Uuid.parse("beb5483e-36e1-4688-b7f5-ea07361b26a8"),
+          serviceId: Uuid.parse(SERVICE_UUID),
+          characteristicId: Uuid.parse(CHARACTERISTIC_UUID_TX),
           deviceId: device.id,
         ),
       ).listen((data) {
@@ -104,8 +106,8 @@ class _MyHomePageState extends State<MyHomePage> {
       final encodedData = utf8.encode(data);
       await flutterReactiveBle.writeCharacteristicWithResponse(
         QualifiedCharacteristic(
-          serviceId: Uuid.parse("4fafc201-1fb5-459e-8fcc-c5c9c331914b"),
-          characteristicId: Uuid.parse("beb5483e-36e1-4688-b7f5-ea07361b26a8"),
+          serviceId: Uuid.parse(SERVICE_UUID),
+          characteristicId: Uuid.parse(CHARACTERISTIC_UUID_RX),
           deviceId: discoveredDevices.firstWhere((device) => connectedDevices[device.id] == true).id,
         ),
         value: encodedData,
@@ -133,14 +135,19 @@ class _MyHomePageState extends State<MyHomePage> {
               children: [
                 Text('Connected with ESP32'),
                 SizedBox(height: 10),
-                TextField(
-                  controller: _textController,
-                  decoration: InputDecoration(labelText: 'Enter data to send'),
-                ),
-                SizedBox(height: 10),
-                ElevatedButton(
-                  onPressed: () => sendDataToDevice(_textController.text),
-                  child: Text('Send Data'),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () => sendDataToDevice('on'),
+                      child: Text('Turn On'),
+                    ),
+                    SizedBox(width: 10),
+                    ElevatedButton(
+                      onPressed: () => sendDataToDevice('off'),
+                      child: Text('Turn Off'),
+                    ),
+                  ],
                 ),
                 SizedBox(height: 10),
                 Text('Received Data: $deviceData'),
